@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 460px; margin: 12vh auto;">
+  <h1>Face Recognition App</h1>
+  <p class="muted">Sign in or create the first admin account.</p>
+  <form id="login-form" class="row" style="flex-direction: column; align-items: stretch;">
+    <input id="email" type="email" placeholder="Email" required />
+    <input id="password" type="password" placeholder="Password" minlength="8" required />
+    <div class="row">
+      <button type="submit">Login</button>
+      <button id="register-btn" type="button" class="alt">Bootstrap Register</button>
+    </div>
+  </form>
+  <p id="login-msg" class="muted"></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.FaceApp?.initLoginPage();
+</script>
+{% endblock %}

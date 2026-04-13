@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.db
+.pytest_cache/
+.coverage
+.venv/
+.env
+face_recognition_app.egg-info/
+data/samples/
+data/snapshots/
