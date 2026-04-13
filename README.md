@@ -21,6 +21,22 @@ Local FastAPI app for webcam-based face identification against a known-faces dat
    - `uvicorn app.main:app --reload`
 4. Open `http://127.0.0.1:8000`.
 
+## Docker
+
+### Build Docker Image
+- Standard build (without insightface optional extras):
+  - `docker build -t face-recognition-app:latest .`
+- Build with insightface extras:
+  - `docker build --build-arg INSTALL_INSIGHTFACE=true -t face-recognition-app:latest .`
+
+### Run Docker Container
+- `docker run --rm -p 8001:8000 -e FACE_APP_SECRET_KEY=change-me -v face_app_data:/app/data face-recognition-app:latest`
+- Open `http://127.0.0.1:8001`.
+
+### Run With Docker Compose
+- `docker compose up --build`
+- Open `http://127.0.0.1:8001`.
+
 ## Notes
 - If `insightface` is not installed, the app uses a deterministic fallback embedding engine for development/testing.
 - Webcam access happens in the browser (`getUserMedia`) and frames are streamed to the backend.

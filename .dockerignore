@@ -1,0 +1,11 @@
+.git
+.gitignore
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+face_recognition_app.egg-info/
+face_app.db
+data/
+tests/

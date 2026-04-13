@@ -1,0 +1,19 @@
+services:
+  face-app:
+    image: face-recognition-app:latest
+    build:
+      context: .
+      args:
+        INSTALL_INSIGHTFACE: "false"
+    ports:
+      - "8001:8000"
+    environment:
+      FACE_APP_SECRET_KEY: change-me-before-sharing
+      FACE_APP_DATABASE_URL: sqlite:////app/data/face_app.db
+      FACE_APP_COOKIE_SECURE: "false"
+    volumes:
+      - face_app_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  face_app_data:
