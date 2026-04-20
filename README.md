@@ -6,6 +6,7 @@ Local FastAPI app for webcam-based face identification against a known-faces dat
 - Local email/password auth with admin/operator roles
 - Known-person enrollment via webcam frames or uploaded photos
 - Continuous live recognition over WebSocket
+- Single-frame recognition API endpoint for non-WebSocket clients
 - Strict identity mode with unknown fallback
 - Basic liveness heuristic (motion + eye landmark signal)
 - Recognition event logging with optional unknown snapshots
@@ -20,6 +21,14 @@ Local FastAPI app for webcam-based face identification against a known-faces dat
 3. Run the app:
    - `uvicorn app.main:app --reload`
 4. Open `http://127.0.0.1:8000`.
+
+## API Endpoint (Single Frame Identify)
+- `POST /api/recognition/identify`
+- Auth: logged-in session cookie
+- Body:
+  - `{ "frame_base64": "data:image/jpeg;base64,..." }`
+- Response:
+  - `known`, `unknown`, or `rejected_liveness` with score/liveness details
 
 ## Docker
 

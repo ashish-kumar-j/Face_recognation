@@ -107,3 +107,10 @@ def logout(
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
     return UserResponse(id=current_user.id, email=current_user.email, role=current_user.role)
+
+
+@router.get("/ws-token")
+def ws_token(current_user: User = Depends(get_current_user)):
+    # Fallback token for WebSocket auth when browser cookie behavior is restrictive.
+    token = create_session_token(current_user.id, current_user.role)
+    return {"token": token}

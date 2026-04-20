@@ -8,6 +8,13 @@
       return m ? decodeURIComponent(m[1]) : "";
     },
 
+    setLiveStatus(text) {
+      const el = document.getElementById("live-result");
+      if (el) {
+        el.textContent = text;
+      }
+    },
+
     async api(path, options = {}) {
       const headers = new Headers(options.headers || {});
       if (!["GET", "HEAD"].includes((options.method || "GET").toUpperCase())) {
@@ -69,7 +76,7 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         video.srcObject = stream;
       } catch (err) {
-        document.getElementById("live-result").textContent = `Camera error: ${err.message}`;
+        this.setLiveStatus(`Camera error: ${err.message}`);
       }
 
       document.getElementById("logout-btn")?.addEventListener("click", async () => {
@@ -140,9 +147,23 @@
       document.getElementById("save-settings")?.addEventListener("click", () => this.saveSettings());
       document.getElementById("refresh-outbox")?.addEventListener("click", () => this.loadOutbox());
 
-      await this.loadPersons();
-      await this.loadEvents();
-      await this.loadOutbox();
+      try {
+        await this.loadPersons();
+      } catch (err) {
+        document.getElementById("person-msg").textContent = err.message;
+      }
+
+      try {
+        await this.loadEvents();
+      } catch (err) {
+        this.setLiveStatus(`Event load error: ${err.message}`);
+      }
+
+      try {
+        await this.loadOutbox();
+      } catch (err) {
+        document.getElementById("settings-msg").textContent = err.message;
+      }
     },
 
     captureFrame(video, canvas, ctx) {
@@ -152,21 +173,66 @@
       return canvas.toDataURL("image/jpeg", 0.9);
     },
 
-    startLive(video, canvas, ctx) {
+    async startLive(video, canvas, ctx) {
       if (this.ws) {
         return;
       }
+
+      if (!video.srcObject) {
+        this.setLiveStatus("Camera stream is not available.");
+        return;
+      }
+
+      this.setLiveStatus("Starting recognition...");
+
+      let wsToken;
+      try {
+        const tokenResp = await this.api("/api/auth/ws-token");
+        wsToken = tokenResp.token;
+        if (!wsToken) {
+          throw new Error("Missing ws token");
+        }
+      } catch (err) {
+        this.setLiveStatus(`Unable to start recognition: ${err.message}`);
+        return;
+      }
+
       const proto = location.protocol === "https:" ? "wss" : "ws";
-      this.ws = new WebSocket(`${proto}://${location.host}/api/recognition/live`);
+      const wsUrl = `${proto}://${location.host}/api/recognition/live?token=${encodeURIComponent(wsToken)}`;
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        this.setLiveStatus("Recognition connected. Scanning frames...");
+      };
+
+      this.ws.onerror = () => {
+        this.setLiveStatus("WebSocket error while connecting recognition.");
+      };
 
       this.ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch (_err) {
+          this.setLiveStatus("Received invalid response from recognition service.");
+          return;
+        }
+
+        if (data.error) {
+          this.setLiveStatus(`Recognition error: ${data.error}`);
+          return;
+        }
+
         const text = `${data.match_status} | score=${data.score ?? "n/a"} | liveness=${data.liveness_score ?? "n/a"} | ${data.person_name ?? ""}`;
-        document.getElementById("live-result").textContent = text;
+        this.setLiveStatus(text);
       };
 
       this.ws.onclose = () => {
-        this.stopLive();
+        if (this.interval) {
+          clearInterval(this.interval);
+          this.interval = null;
+        }
+        this.ws = null;
       };
 
       this.interval = setInterval(() => {
@@ -183,10 +249,12 @@
         clearInterval(this.interval);
         this.interval = null;
       }
-      if (this.ws) {
-        this.ws.close();
-        this.ws = null;
+      const ws = this.ws;
+      this.ws = null;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        ws.close();
       }
+      this.setLiveStatus("Recognition stopped.");
     },
 
     async loadPersons() {
